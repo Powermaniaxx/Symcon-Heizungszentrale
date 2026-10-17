@@ -60,7 +60,7 @@ class SVHeatingCenter extends IPSModuleStrict
 
     public function GetCommunicationReport(): string
     {
-        return json_encode(['version'=>'1.8','status'=>$this->ReadAttributeString('Status'),
+        return json_encode(['version'=>'1.8.1','status'=>$this->ReadAttributeString('Status'),
             'lastActionReply'=>json_decode($this->ReadAttributeString('LastActionReply'),true),
             'preparation'=>$this->View()['seasonPreparation']],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     }
