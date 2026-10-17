@@ -60,7 +60,13 @@ class SVHeatingCenter extends IPSModuleStrict
 
     public function GetCommunicationReport(): string
     {
-        return json_encode(['version'=>'1.8.1','status'=>$this->ReadAttributeString('Status'),
+        $decision=$this->Decision();$state=$this->State();
+        $active=$this->ReadAttributeBoolean('Active');$testing=$this->ReadAttributeBoolean('TestMode');
+        $season=$active&&!$testing?($state['currentSeason']??$decision['season']):$decision['season'];
+        return json_encode(['version'=>'1.8.2','status'=>$this->ReadAttributeString('Status'),
+            'control'=>['mode'=>$this->ReadAttributeString('Mode'),'active'=>$active,'testMode'=>$testing,
+                'season'=>$season,'seasonLabel'=>self::SEASONS[$season],
+                'manualSeason'=>$this->ReadAttributeString('LastManualMode'),'reason'=>$decision['reason']],
             'lastActionReply'=>json_decode($this->ReadAttributeString('LastActionReply'),true),
             'preparation'=>$this->View()['seasonPreparation']],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     }

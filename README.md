@@ -1,5 +1,7 @@
 # Heizungszentrale für Symcon
 
+Ab Version 1.8.2 enthält der vorhandene lokale Diagnoseaufruf `SVHZ_GetCommunicationReport` zusätzlich den Betriebsstatus unter `control`. So kann der Hausstatus ab Version 0.78 Betriebsart, tatsächliche Aktivität, Testmodus und Saison direkt aus der Zentrale anzeigen. Die Bedienung erfolgt über deren bestehenden Modus-Befehl; eine separate Heizungssteuerung entsteht dadurch nicht.
+
 Ab Version 1.8.1 zeigt die Oberfläche Betriebsart und tatsächliche Regelung getrennt. „Automatisch“ wählt die Betriebsart; erst „Automatik starten“ und die anschließende Bestätigung aktivieren die Regelung. Vorher stehen die Saison und Sollwerte als Vorschau in der Anzeige. Die zuletzt auf den Geräten gespeicherten Wochenpläne laufen unabhängig davon weiter.
 
 Abgeschlossene Einlesevorgänge und das letzte Testergebnis sind standardmäßig eingeklappt. Sie können bei Bedarf über ihre Überschrift geöffnet werden. Laufende Einlesevorgänge und neue Fehler werden zunächst aufgeklappt; regelmäßige Aktualisierungen erhalten die selbst gewählte Ansicht.
