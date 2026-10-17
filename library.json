@@ -1,0 +1,12 @@
+{
+  "id": "{D872E312-0960-4486-9829-0968EBDFE412}",
+  "name": "Heizungszentrale",
+  "author": "Sven",
+  "url": "https://github.com/Powermaniaxx/Symcon-Heizungszentrale",
+  "compatibility": {
+    "version": "8.1"
+  },
+  "version": "1.8",
+  "build": 10,
+  "date": 1792195200
+}

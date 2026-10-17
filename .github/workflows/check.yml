@@ -1,0 +1,13 @@
+name: PHP checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP syntax
+        run: find Center tests -name '*.php' -print0 | xargs -0 -n1 php -n -l
+      - name: Check weather rules
+        run: php -n tests/weather-rules.php

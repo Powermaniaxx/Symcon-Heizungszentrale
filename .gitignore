@@ -1,0 +1,6 @@
+*.bak
+*.tmp-*
+.env
+*private*
+*Zuordnungen*
+Heizungszentrale-Sicherungen/

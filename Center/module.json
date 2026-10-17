@@ -1,0 +1,14 @@
+{
+  "id": "{C9813E5D-940A-42B2-B7B4-A6A78F895E51}",
+  "name": "SVHeatingCenter",
+  "type": 3,
+  "vendor": "Persönlich",
+  "aliases": [
+    "Heizungszentrale"
+  ],
+  "url": "https://github.com/Powermaniaxx/Symcon-Heizungszentrale",
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "SVHZ"
+}
