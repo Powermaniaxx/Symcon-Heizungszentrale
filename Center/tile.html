@@ -1,12 +1,103 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{color-scheme:light dark;--bg:#f5f7f8;--panel:#fff;--ink:#182b36;--muted:#647783;--line:#dbe4e8;--accent:#087e75;--soft:#e8f6f3;--warm:#df9045}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}button,select,input[type=text],input[type=number]{border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);padding:9px 12px}button{cursor:pointer;min-height:40px}button:hover{border-color:var(--accent)}button:disabled{opacity:.45;cursor:default}.primary{background:var(--accent);border-color:var(--accent);color:white}.subtle{background:transparent}.shell{max-width:1440px;margin:auto;padding:20px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}h1{font-size:23px;margin:0;letter-spacing:-.6px}h2{font-size:18px;margin:0}p{margin:5px 0}.muted{color:var(--muted)}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted)}.top{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:30px;padding:5px 10px;background:var(--panel);font-size:12px}.rooms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}.room{text-align:left;padding:13px;border-radius:12px;background:var(--panel);min-width:0}.room.selected{border:2px solid var(--accent);padding:12px;background:var(--soft)}.room strong{font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.room .temp{display:flex;align-items:baseline;gap:10px;margin:7px 0 3px}.room .actual{font-size:25px;font-weight:650;letter-spacing:-1px}.room small{font-size:12px;color:var(--muted)}.editor{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.editorHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.profiles{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0}.profiles button{padding:7px 13px;min-height:36px}.profiles .selected,.days .selected,.segments .selected{background:var(--soft);border-color:var(--accent);color:var(--accent);font-weight:650}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:14px 0 10px}.days button{padding:7px}.days button small{display:block;font-weight:400;font-size:10px;color:var(--muted)}.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:0 0 5px}.timeline{display:flex;height:44px;border-radius:10px;overflow:hidden;background:var(--line)}.period{border:0;border-radius:0;min-height:0;padding:0;font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;color:#203746;box-shadow:inset -1px 0 #fff8}.period.active{box-shadow:inset 0 0 0 3px var(--accent)}.segments{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 16px}.segments button{font-size:12px;padding:6px 9px;min-height:32px}.adjust{display:grid;grid-template-columns:1fr 1fr 180px;gap:20px;background:var(--bg);border-radius:12px;padding:15px}.control label{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);align-items:center}.clock{width:80px;text-align:center;font-variant-numeric:tabular-nums;font-size:18px!important;font-weight:650;padding:4px!important}input[type=range]{width:100%;accent-color:var(--accent);margin:12px 0 0;min-height:28px}.tools,.footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:13px}.tools button{font-size:12px;padding:6px 10px;min-height:34px}.footer{border-top:1px solid var(--line);padding-top:14px;justify-content:space-between}.footer .buttons{display:flex;gap:8px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted);margin-top:12px;overflow-wrap:anywhere}.unsaved{color:#b45b1d;font-weight:650}.empty{padding:38px 15px;text-align:center;background:var(--bg);border-radius:12px}.auto{margin-top:13px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 15px}.auto summary{cursor:pointer;font-weight:600}.auto .row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0 2px}.note{font-size:12px;color:var(--muted)}dialog{max-width:560px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:14px;padding:22px;background:var(--panel);color:var(--ink)}dialog::backdrop{background:#10253188}.modalButtons{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.notice{padding:10px 14px;border-radius:9px;margin:8px 0;background:#fff0df;color:#75491c}.busy{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:30px;background:var(--ink);color:var(--panel);box-shadow:0 4px 20px #0002}.hidden{display:none!important}@media(max-width:720px){.shell{padding:12px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.room{padding:10px}.room.selected{padding:9px}.room .actual{font-size:22px}.editor{padding:12px}.adjust{grid-template-columns:1fr 1fr;gap:12px}.control.temperature{grid-column:1/-1}.days button small{display:none}.profiles{gap:4px}.profiles button{padding:6px 8px;font-size:12px}.footer{align-items:stretch}.footer .buttons{width:100%}.footer .buttons button{flex:1}.top .pill{font-size:11px}h1{font-size:20px}.editorHead h2{font-size:17px}.scale{font-size:10px}}@media(prefers-color-scheme:dark){:root{--bg:#17232b;--panel:#22323d;--ink:#e6edf1;--muted:#a5b7c2;--line:#3b505e;--soft:#173f3d;--accent:#57c7b4}.notice{background:#563b23;color:#ffe0bc}.period{color:#17313e}.primary{color:#102b28}}
-.shell{padding-top:66px}@media(max-width:720px){.shell{padding-top:62px}}.room small{display:block;white-space:normal}.room .planned{margin-top:7px;color:var(--accent);font-weight:600}.decision{margin-bottom:14px}html,body{height:100%;overflow:hidden}body{padding-top:60px}.shell{height:100%;overflow:auto;overscroll-behavior:contain;padding-top:16px}@media(max-width:720px){body{padding-top:56px}.shell{padding-top:12px}}.setupNotice{margin-bottom:14px}#presetName,#presetSelect{max-width:100%;min-width:0;flex:1 1 180px}.note,.auto{overflow-wrap:anywhere}</style></head><body><div class="shell">
-<header><div><div class="eyebrow">Alle Räume · eine Übersicht</div><h1>Heizungszentrale</h1></div><div class="top"><span id="outside" class="pill"></span><span id="automation" class="pill"></span><button class="subtle" id="refresh" title="Aktualisieren">↻</button></div></header>
+.shell{padding-top:66px}@media(max-width:720px){.shell{padding-top:62px}}.room small{display:block;white-space:normal}.room .planned{margin-top:7px;color:var(--accent);font-weight:600}.decision{margin-bottom:14px}html,body{height:100%;overflow:hidden}body{padding-top:60px}.shell{height:100%;overflow:auto;overscroll-behavior:contain;padding-top:16px}@media(max-width:720px){body{padding-top:56px}.shell{padding-top:12px}}.setupNotice{margin-bottom:14px}#presetName,#presetSelect{max-width:100%;min-width:0;flex:1 1 180px}.note,.auto{overflow-wrap:anywhere}
+/* Heizungszentrale: kompakte Startübersicht. Die Heizpläne und Bedienelemente bleiben unverändert. */
+.shell{max-width:1180px;padding:12px 14px 24px}
+.overview,.roomsPanel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 3px 12px #1025310d;margin-bottom:12px}
+.dashboardHead{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,245px);align-items:start;gap:14px;margin:0 0 16px}
+.dashboardTitle h1{font-size:clamp(21px,2.4vw,27px);font-weight:760;letter-spacing:-.7px;line-height:1.2}
+.dashboardTitle .eyebrow{margin-top:7px;font-size:10px;line-height:1.4;letter-spacing:1.4px}
+.dashboardStats{display:grid;gap:6px;min-width:0}
+.dashboardStats .pill{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);background:var(--soft);border-radius:25px;min-height:37px;font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+.statIcon{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:22px;font-size:19px;color:var(--accent)}
+.modeToolbar{display:flex;align-items:stretch;gap:9px}
+.modeSwitch{display:flex;gap:3px;flex:1;min-width:0;padding:3px;border:1px solid var(--line);background:var(--bg);border-radius:12px}
+.modeSwitch button{flex:1;min-width:0;font-weight:650;background:transparent;border-color:transparent;border-radius:9px;padding:8px 9px}
+.modeSwitch button.primary{background:var(--accent);border-color:var(--accent);color:white;box-shadow:0 1px 5px #0002}
+.refreshButton{width:44px;min-width:44px;min-height:44px;padding:0;border-radius:12px;font-size:24px;border-color:var(--line);background:var(--panel);color:var(--accent)}
+.modeFoot{margin:6px 0 0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;min-height:18px}
+.modeFoot .note{font-size:12px}
+.modeFoot label{font-size:12px}
+.modeFoot select{padding:5px 8px}
+.overview .decision{display:flex;gap:12px;align-items:flex-start;margin:13px 0 0;padding:14px 0 0;border-top:1px solid var(--line)}
+.seasonIcon{display:flex;flex:0 0 39px;width:39px;height:39px;border-radius:50%;align-items:center;justify-content:center;background:#e9963e1b;font-size:21px}
+.decisionBody{min-width:0}
+.decisionBody strong{font-size:15px;line-height:1.35}
+.decisionBody .note{margin:5px 0 0;font-size:12px;line-height:1.5}
+.roomsPanel{padding:14px 16px}
+.roomsHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}
+.roomsHead h2{font-size:19px;font-weight:750}
+.roomCount{font-size:12px;color:var(--muted)}
+.rooms{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:0}
+.room,.room.selected{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:178px;padding:12px;text-align:left;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 1px 4px #1025310a;transition:border-color .12s ease,background .12s ease}
+.room.selected{border:2px solid var(--accent);padding:11px;background:var(--soft)}
+.room:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.roomHeading{display:flex;align-items:center;gap:7px;min-width:0}
+.roomSymbol{flex:none;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--soft);color:var(--accent);font-size:20px}
+.roomHeading strong{display:block;min-width:0;overflow-wrap:anywhere;white-space:normal;overflow:visible;font-weight:740;font-size:13px;line-height:1.25}
+.roomChevron{margin-left:auto;color:var(--muted);font-size:22px;line-height:1}
+.room .temp{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 9px;margin:10px 0 2px}
+.room .actual{font-size:28px;font-weight:760;letter-spacing:-.9px;line-height:1.1}
+.room .temp small{font-size:11px;white-space:normal}
+.roomProfile{color:var(--muted);font-size:12px;margin-top:5px}
+.roomSensors{color:var(--muted);font-size:11px;line-height:1.4;margin-top:5px}
+.roomPlan{display:flex;flex-direction:column;gap:4px;margin-top:auto;padding:8px 9px;border-radius:10px;background:var(--soft);min-width:0}
+.room.selected .roomPlan{background:color-mix(in srgb,var(--panel) 55%,transparent)}
+.roomPlan .planned{display:block;font-size:11px;line-height:1.4;font-weight:700;margin:0;color:var(--accent);overflow-wrap:anywhere}
+.roomNext{display:block;color:var(--muted);font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+@media(max-width:850px){.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .shell{padding:9px 9px 22px}
+ .overview{padding:13px 13px 14px;margin-bottom:9px;border-radius:15px}
+ .roomsPanel{padding:12px 10px 10px;border-radius:15px}
+ .dashboardHead{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:12px}
+ .dashboardTitle h1{font-size:22px}
+ .dashboardTitle .eyebrow{font-size:10px;letter-spacing:1.1px}
+ .dashboardStats{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:6px}
+ .dashboardStats .pill{padding:7px 8px;gap:5px;font-size:11px;min-height:36px}
+ .statIcon{min-width:19px;font-size:16px}
+ .modeToolbar{gap:7px}
+ .modeSwitch button{padding:7px 5px;font-size:12px;min-height:40px}
+ .refreshButton{width:43px;min-width:43px;min-height:43px}
+ .overview .decision{padding-top:12px;margin-top:11px;gap:9px}
+ .seasonIcon{flex-basis:33px;width:33px;height:33px;font-size:18px}
+ .decisionBody strong{font-size:13px}
+ .decisionBody .note{font-size:11px}
+ .rooms{gap:7px}
+ .room,.room.selected{min-height:165px;padding:9px}
+ .room.selected{padding:8px}
+ .roomSymbol{width:25px;height:25px;font-size:17px}
+ .roomHeading{gap:5px}
+ .roomHeading strong{font-size:12px}
+ .room .actual{font-size:25px}
+ .room .temp{gap:2px 6px}
+ .roomPlan{padding:7px 6px}
+}
+@media(max-width:340px){.dashboardStats{grid-template-columns:1fr}.roomHeading strong{font-size:11px}.room .actual{font-size:23px}.room .temp small{font-size:10px}}
+</style></head><body><div class="shell">
+<div class="overview">
+<header class="dashboardHead">
+  <div class="dashboardTitle"><h1>Heizungszentrale</h1><div class="eyebrow">Alle Räume · eine Übersicht</div></div>
+  <div class="dashboardStats">
+    <span class="pill"><span class="statIcon" aria-hidden="true">☁</span><span id="outside"></span></span>
+    <span class="pill"><span class="statIcon" aria-hidden="true">⚙</span><span id="automation"></span></span>
+  </div>
+</header>
 <div id="testNotice" class="notice"><strong>Testmodus aktiv</strong> · Diese Zentrale sendet keine Gerätebefehle. Andere Heizungssteuerungen werden dadurch nicht angehalten.</div>
-<div class="top" style="margin-bottom:14px"><button id="modeAuto">Automatisch</button><button id="modeManual">Manuell</button><label id="manualLabel" class="hidden">Saison <select id="manualSeason"><option value="spring">Frühjahr</option><option value="summer">Sommer</option><option value="autumn">Herbst</option><option value="winter">Winter</option></select></label><span id="modeHint" class="note"></span></div>
+<div class="modeToolbar">
+  <div class="modeSwitch" role="group" aria-label="Betriebsart wählen"><button id="modeAuto">Automatisch</button><button id="modeManual">Manuell</button></div>
+  <button class="subtle refreshButton" id="refresh" type="button" aria-label="Aktualisieren" title="Aktualisieren">↻</button>
+</div>
+<div class="modeFoot">
+  <label id="manualLabel" class="hidden">Saison <select id="manualSeason"><option value="spring">Frühjahr</option><option value="summer">Sommer</option><option value="autumn">Herbst</option><option value="winter">Winter</option></select></label>
+  <span id="modeHint" class="note"></span>
+</div>
 <div id="inactiveNotice" class="notice hidden"><strong>Symcon-Regelung noch nicht aktiv</strong><p id="inactiveExplanation"></p><button id="startControl" class="primary">Automatik starten</button></div>
-<div class="decision"><strong id="chosenSeason"></strong><p id="decisionReason" class="note"></p></div><div id="setupNotice" class="notice setupNotice hidden"><span id="missingPlans"></span> <button id="loadAll" class="primary">Alle Räume einlesen</button></div><div id="rooms" class="rooms"></div>
+<div class="decision"><span class="seasonIcon" aria-hidden="true">🍂</span><div class="decisionBody"><strong id="chosenSeason"></strong><p id="decisionReason" class="note"></p></div></div>
+</div>
+<div class="roomsPanel"><div class="roomsHead"><h2>Räume</h2><span id="roomCount" class="roomCount"></span></div>
+<div id="setupNotice" class="notice setupNotice hidden"><span id="missingPlans"></span> <button id="loadAll" class="primary">Alle Räume einlesen</button></div><div id="rooms" class="rooms"></div></div>
 <section class="editor"><div class="editorHead"><div><div class="eyebrow">Heizplan bearbeiten</div><h2 id="roomName"></h2></div><span id="saveState" class="note"></span></div>
 <div class="auto"><strong id="currentPlanTitle"></strong><p id="currentPlanValues"></p><p id="currentPlanReason" class="note"></p><p id="lastPlanTransfer" class="note"></p></div>
 <div class="tools"><span id="editorViewHint" class="note"></span><button id="followPlan">Aktuellen Automatikplan anzeigen</button></div>
@@ -67,7 +158,41 @@ function render(){
  $('followPlan').textContent=state.mode==='auto'?'Aktuellen Automatikplan anzeigen':'Aktuellen manuellen Plan anzeigen';$('followPlan').classList.toggle('hidden',followPlan&&!dirty);
  $('manualPresets').classList.toggle('hidden',state.mode==='auto');
  const presetSelection=$('presetSelect').value;$('presetSelect').replaceChildren(...[...(!state.manualPresets?.length?[{id:'',name:'Noch kein Profil gespeichert'}]:state.manualPresets)].map(p=>{const option=document.createElement('option');option.value=p.id;option.textContent=p.name;return option}));if([...$('presetSelect').options].some(o=>o.value===presetSelection))$('presetSelect').value=presetSelection;$('presetLoad').disabled=!state.manualPresets?.length;
- $('rooms').replaceChildren(...state.rooms.map(r=>{const b=document.createElement('button');b.className='room'+(r.id===roomId?' selected':'');const n=document.createElement('strong');n.textContent=r.name;const a=document.createElement('div');a.className='temp';const v=document.createElement('span');v.className='actual';v.textContent=(r.parts?.length?'Ø ':'')+temp(r.actual)+'°';const s=document.createElement('small');s.textContent='Soll '+temp(r.target)+' °C';a.append(v,s);const p=document.createElement('small');p.textContent=r.deviceProfile===3?'Abwesenheit':r.deviceProfile===2?'Normal':'Bisheriges Geräteprofil';b.append(n,a,p);if(r.parts?.length){const sensors=document.createElement('small');sensors.textContent=r.parts.map(x=>x.name+' '+temp(x.actual)+'° · Soll '+temp(x.target)+'°').join(' / ');b.append(sensors)}const planned=state.planned?.find(x=>x.id===r.id);if(planned){const target=document.createElement('small');target.className='planned';target.textContent=(testing?'Testziel: ':state.active?'Symcon-Ziel: ':'Vorschau: ')+planned.season+' · '+(planned.error?'Vorlage fehlt':temp(planned.target)+' °C');b.append(target);if(!planned.error){const next=document.createElement('small');next.textContent='bis '+time(planned.until)+' · danach '+temp(planned.nextTarget)+' °C';b.append(next)}}b.onclick=()=>safelySwitch(()=>{roomId=r.id;followPlan=true});return b}));
+ $('roomCount').textContent=state.rooms.length+' Räume';
+ $('rooms').replaceChildren(...state.rooms.map(r=>{
+  const b=document.createElement('button');b.type='button';b.className='room'+(r.id===roomId?' selected':'');
+  b.setAttribute('aria-pressed',String(r.id===roomId));
+  const heading=document.createElement('div');heading.className='roomHeading';
+  const icon=document.createElement('span');icon.className='roomSymbol';icon.setAttribute('aria-hidden','true');
+  const roomName=r.name.toLocaleLowerCase('de-DE');
+  icon.textContent=roomName.includes('wohn')?'⌂':roomName.includes('schlaf')?'☾':roomName.includes('ankleid')?'♙':'⌑';
+  const n=document.createElement('strong');n.textContent=r.name;
+  const chevron=document.createElement('span');chevron.className='roomChevron';chevron.setAttribute('aria-hidden','true');chevron.textContent='›';
+  heading.append(icon,n,chevron);
+  const a=document.createElement('div');a.className='temp';
+  const v=document.createElement('span');v.className='actual';v.textContent=(r.parts?.length?'Ø ':'')+temp(r.actual)+'°';
+  const targetTemp=document.createElement('small');targetTemp.textContent='Soll '+temp(r.target)+' °C';a.append(v,targetTemp);
+  const profile=document.createElement('div');profile.className='roomProfile';
+  profile.textContent=r.deviceProfile===3?'Abwesenheit':r.deviceProfile===2?'Normal':'Bisheriges Geräteprofil';
+  b.append(heading,a,profile);
+  if(r.parts?.length){
+   const sensors=document.createElement('small');sensors.className='roomSensors';
+   sensors.textContent=r.parts.map(x=>x.name+' '+temp(x.actual)+'° · Soll '+temp(x.target)+'°').join(' / ');
+   b.append(sensors);
+  }
+  const planned=state.planned?.find(x=>x.id===r.id);
+  if(planned){
+   const plan=document.createElement('div');plan.className='roomPlan';
+   const title=document.createElement('span');title.className='planned';
+   title.textContent=(testing?'Testziel: ':state.active?'Symcon-Ziel: ':'Vorschau: ')+planned.season+' · '+(planned.error?'Vorlage fehlt':temp(planned.target)+' °C');plan.append(title);
+   if(!planned.error){
+    const next=document.createElement('span');next.className='roomNext';
+    next.textContent='bis '+time(planned.until)+' · danach '+temp(planned.nextTarget)+' °C';plan.append(next);
+   }
+   b.append(plan);
+  }
+  b.onclick=()=>safelySwitch(()=>{roomId=r.id;followPlan=true});return b;
+ }));
  $('profiles').replaceChildren(...Object.entries(state.seasons).map(([key,label])=>{const b=document.createElement('button');b.textContent=label;b.className=key===season?'selected':'';b.onclick=()=>safelySwitch(()=>{season=key;followPlan=false});return b}));
  $('saveState').textContent=dirty?'Ungespeicherte Änderungen':selectedTemplate().plan?'Gespeicherte Vorlage':'Noch nicht eingelesen';$('saveState').className=dirty?'unsaved':'note';
  $('emptyReason').textContent=selectedTemplate().origin?.startsWith('Alte Vorlage ')?selectedTemplate().origin+' Bitte die Gerätepläne einlesen.':'Für diese Vorlage sind noch keine Gerätepläne eingelesen.';
