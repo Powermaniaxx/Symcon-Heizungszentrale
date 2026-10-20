@@ -47,6 +47,59 @@ function scRuntimePlan(array $plan,string $mode,string $season,bool $warm,?float
     return $result;
 }
 
+
+/**
+ * Cold-night morning preheat. Uses measured local-night samples only.
+ * Moves exactly one existing morning comfort transition earlier; no added
+ * temperature step, no stored-template changes, and no heating while absent.
+ */
+function scColdNightPreheatPlan(array $plan,array $samples,int $day,int $now,string $room,?float $actual,bool $present,string $season): array {
+    $result=['plan'=>$plan,'minutes'=>0,'reason'=>'Keine Kalt-Nacht-Vorheizung.'];
+    if (!$present||!in_array($season,['spring','autumn','winter'],true)
+        ||$actual===null||!is_finite($actual)||$actual<5||$actual>35) return $result;
+    $room=mb_strtolower($room,'UTF-8');
+    $limit=preg_match('/wohnzimmer/u',$room)?90:(preg_match('/(?:bad|badezimmer)/u',$room)?60:(preg_match('/flur/u',$room)?45:0));
+    if ($limit===0) return $result;
+    $clock=(new DateTimeImmutable('@'.$now))->setTimezone(new DateTimeZone('Europe/Berlin'));
+    $date=$clock->format('Y-m-d');
+    $begin=(new DateTimeImmutable($date.' 00:00:00',new DateTimeZone('Europe/Berlin')))->getTimestamp();
+    $cutoff=$begin+3*3600;
+    // A fixed completed window prevents plan-hash churn from later samples.
+    if ($now<$cutoff) return $result;
+    $values=[];$timestamps=[];
+    foreach($samples as $sample) {
+        if (!is_array($sample)||count($sample)!==2||!is_numeric($sample[0])||!is_numeric($sample[1])) continue;
+        [$at,$temp]=$sample;$at=(int)$at;$temp=(float)$temp;
+        if ($at<$begin||$at>$cutoff||!is_finite($temp)||$temp< -40||$temp>55) continue;
+        $values[]=$temp;$timestamps[]=$at;
+    }
+    if (count($values)<4||max($timestamps)-min($timestamps)<5400) return $result;
+    sort($timestamps);
+    for($i=1;$i<count($timestamps);$i++) if($timestamps[$i]-$timestamps[$i-1]>5400) return $result;
+    $mean=array_sum($values)/count($values);
+    if ($mean>3.0) return $result;
+    $plan=scValidatePlan($plan);
+    $points=$plan[$day]??null;
+    if (!$points||count($points)<2) return $result;
+    $low=min(array_column($points,1));$high=max(array_column($points,1));
+    if ($high-$low<1.0||$actual>=$high-0.5) return $result;
+    $lead=$mean<=-2.0?$limit:(int)(ceil($limit/2/5)*5);
+    foreach($points as $i=>$point) {
+        if ($i===0||$point[0]<240||$point[0]>660||$point[1]<$high-0.5) continue;
+        $before=$points[$i-1];
+        if ($point[1]-$before[1]<1.0) continue;
+        // Keep at least 15 minutes of the preceding section and never cross midnight.
+        $new=max($before[0]+15,$point[0]-$lead);
+        if ($new>=$point[0]) return $result;
+        $points[$i][0]=$new;$plan[$day]=$points;
+        $result['plan']=scValidatePlan($plan);
+        $result['minutes']=$point[0]-$new;
+        $result['reason']='Gemessene kalte Nacht (00–03 Uhr, Ø '.round($mean,1).' °C): Komfortphase '.($point[0]-$new).' Minuten früher.';
+        return $result;
+    }
+    return $result;
+}
+
 function scSeasonName(mixed $value): ?string {
     if (!is_string($value)) return null;
     $text=html_entity_decode(strip_tags($value),ENT_QUOTES|ENT_HTML5,'UTF-8');
