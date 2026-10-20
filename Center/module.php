@@ -767,9 +767,24 @@ class SVHeatingCenter extends IPSModuleStrict
         $model=$state['learning'][$room][$baseSeason]??[];
         $learned=$season!=='away'&&$season!=='summer'&&$this->ReadAttributeString('Mode')==='auto'&&($model['signature']??'')===$this->Hash($plan)&&($model['offset']??0)===-0.5;
         if ($learned) $plan=scReducedPlan($plan,0.5,true);
+        // Conservative cold-night preheat on the runtime copy only. Preserve
+        // Codex learning, seasonal transitions, away reduction and warm correction.
+        if ($season!=='away'&&$this->ReadAttributeString('Mode')==='auto'
+            &&in_array($baseSeason,['spring','autumn','winter'],true)) {
+            $presenceID=$this->ReadPropertyInteger('PresenceVariable');
+            $atHome=IPS_VariableExists($presenceID)&&GetValue($presenceID)===true;
+            $preheat=scColdNightPreheatPlan($plan,$state['weather']??[],
+                (int)$now->format('N')-1,time(),(string)$this->Zones()[$room][0],
+                $actuals?min($actuals):null,$atHome,$baseSeason);
+            $plan=$preheat['plan'];
+        }
         $result=scRuntimePlan($plan,$this->ReadAttributeString('Mode'),$season,
             !$learned&&$fresh&&!empty($warm['active']),$actuals?min($actuals):null,(int)$now->format('N')-1,(int)$now->format('G')*60+(int)$now->format('i'),
             $state['runtimeCorrection'][$scope][$room]??[],time());
+        if (isset($preheat)&&$preheat['minutes']>0) {
+            $result['reason'].=' '.$preheat['reason'];
+            $result['preheatMinutes']=$preheat['minutes'];
+        }
         if ($persist) {$state['runtimeCorrection'][$scope][$room]=$result['state'];$this->StoreState($state);}
         return $result;
     }
