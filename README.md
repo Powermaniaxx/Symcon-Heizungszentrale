@@ -1,5 +1,19 @@
 # Heizungszentrale für Symcon
 
+## Version 1.9.0 – lokale Lernoptimierung
+
+Die bereits aktivierte Automatik lernt selbstständig pro Raum und Saison aus bestätigten Raumtemperaturen während anwesender Nutzung. Es werden keine manuellen Temperatureingaben als Wünsche übernommen und keine Daten an einen Lerndienst gesendet. Wochenpläne bleiben die Grundlage; Zeiten und gespeicherte Vorlagen werden nicht automatisch umgeschrieben. Homematic bleibt im automatischen Wochenplanbetrieb mit autonomem Geräteplan als Rückfalllösung.
+
+Eine Heizphase muss bei frischen Ist-/Sollwerten mindestens zwei Stunden durchgehend mindestens 0,7 °C zu warm sein. Erst sieben verschiedene Beobachtungstage innerhalb von 28 Tagen erlauben eine Korrektur von −0,5 °C. Sieben bestätigte zu kalte Tage nehmen diese Korrektur zurück; positive Lernkorrekturen gibt es nicht. Änderungen sind höchstens einmal pro sieben Tagen möglich. Nachtwerte bleiben erhalten. Wetterkorrektur und Lernkorrektur werden nicht addiert. Ohne konfigurierte, bestätigte Anwesenheit oder bestätigten Geräte-Automatikmodus wird nicht gelernt. Gemeinsame Räume werden anhand des kälteren Sensors beurteilt.
+
+Abweichende Sollwerte oder ein manueller Gerätemodus sperren den jeweiligen Beobachtungstag einschließlich bereits gesammelter Tagesbelege. Fehlende, ungültige oder über 20 Minuten alte Messwerte und Messlücken unterbrechen die Bestätigung. Vorlagenänderungen setzen das zugehörige Modell zurück. Nicht beobachtbare Eingriffe zwischen zwei Abfragen können grundsätzlich nicht erkannt werden. Diese Fassung lernt eine begrenzte thermische Korrektur während der Nutzung, keine vorhergesagten Anwesenheitszeiten.
+
+Abwesenheit verwendet die passende Saisonvorlage mit 1,5 °C Absenkung, mindestens 14 °C; bereits niedrigere Frostschutzwerte werden niemals angehoben. Die automatische Sommer-Heizpause bleibt erhalten. Die separate gespeicherte Abwesenheitsvorlage wird im laufenden Abwesenheitsbetrieb dadurch ersetzt. Ein automatisch ermittelter Saisonwechsel benötigt zusätzlich 48 Stunden Bestätigung, maximal zwei Stunden Beobachtungslücke und sieben Tage Mindesthaltezeit. Manuelle Saisonwahl bleibt unmittelbar wirksam.
+
+Aktivierung, Pause und lokale Modelle bleiben bei normalen Neustarts erhalten. Neue Instanzen und der Testmodus starten weiterhin ohne Gerätebefehle. Unmittelbar vor einem Schreibbefehl wird die automatische Fortsetzung gesperrt; erst ein erfolgreich abgeschlossener Lauf gibt sie frei. Nach einem unklaren Schreibabbruch oder Kommunikationsfehler muss die Automatik geprüft und wieder aktiviert werden. Dadurch wird ein unsicherer Befehl nach Neustart nicht automatisch wiederholt. Der lokale Diagnosebericht enthält `learning` und `seasonGate`.
+
+Prüfung: PHP-Syntax sowie `php -n tests/weather-rules.php`, `php -n tests/learning.php` und `php -n tests/module-safety.php`. Die Tests verwenden keine realen Heizgeräte.
+
 Ab Version 1.8.2 enthält der vorhandene lokale Diagnoseaufruf `SVHZ_GetCommunicationReport` zusätzlich den Betriebsstatus unter `control`. So kann der Hausstatus ab Version 0.78 Betriebsart, tatsächliche Aktivität, Testmodus und Saison direkt aus der Zentrale anzeigen. Die Bedienung erfolgt über deren bestehenden Modus-Befehl; eine separate Heizungssteuerung entsteht dadurch nicht.
 
 Ab Version 1.8.1 zeigt die Oberfläche Betriebsart und tatsächliche Regelung getrennt. „Automatisch“ wählt die Betriebsart; erst „Automatik starten“ und die anschließende Bestätigung aktivieren die Regelung. Vorher stehen die Saison und Sollwerte als Vorschau in der Anzeige. Die zuletzt auf den Geräten gespeicherten Wochenpläne laufen unabhängig davon weiter.
@@ -66,3 +80,4 @@ Manuelle Änderungen und benannte Gesamtprofile werden getrennt von den Automati
 `CentralProfileVariable`, `LegacyStateVariable`, `LegacySourceMarker` und `LegacyScripts` sind optionale Kompatibilitätseinstellungen für den ursprünglichen individuellen Umstieg. Sie dürfen nur nach Prüfung der eigenen alten Steuerung konfiguriert werden. Ohne diese Zuordnungen werden keine beliebigen fremden Skripte gesucht oder abgeschaltet. Andere aktive Heizungssteuerungen müssen vor einem neuen Echtbetrieb geklärt sein.
 
 Sicherungen werden lokal im Symcon-Skriptverzeichnis unter `Heizungszentrale-Sicherungen` abgelegt. Zugangsdaten, Sicherungen, persönliche Zuordnungen und Geräte-Diagnoseausgaben gehören nicht in dieses öffentliche Repository.
+

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/learning.php';
 
 class SVHeatingCenter extends IPSModuleStrict
 {
@@ -63,10 +64,11 @@ class SVHeatingCenter extends IPSModuleStrict
         $decision=$this->Decision();$state=$this->State();
         $active=$this->ReadAttributeBoolean('Active');$testing=$this->ReadAttributeBoolean('TestMode');
         $season=$active&&!$testing?($state['currentSeason']??$decision['season']):$decision['season'];
-        return json_encode(['version'=>'1.8.2','status'=>$this->ReadAttributeString('Status'),
+        return json_encode(['version'=>'1.9.0','status'=>$this->ReadAttributeString('Status'),
             'control'=>['mode'=>$this->ReadAttributeString('Mode'),'active'=>$active,'testMode'=>$testing,
                 'season'=>$season,'seasonLabel'=>self::SEASONS[$season],
                 'manualSeason'=>$this->ReadAttributeString('LastManualMode'),'reason'=>$decision['reason']],
+            'learning'=>$state['learning']??[], 'seasonGate'=>$state['seasonGate']??[],
             'lastActionReply'=>json_decode($this->ReadAttributeString('LastActionReply'),true),
             'preparation'=>$this->View()['seasonPreparation']],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
     }
@@ -112,6 +114,7 @@ class SVHeatingCenter extends IPSModuleStrict
         if (!IPS_SemaphoreEnter($lock,1)) return;
         try {
             $this->SampleWeather();
+            $this->UpdateSeasonGate();
             if ($this->ReadAttributeBoolean('Active')) $this->Control();
             $this->SendView($this->View());
         } catch (Throwable $e) {$this->Fail($e); $this->SendView($this->View());}
@@ -535,9 +538,23 @@ class SVHeatingCenter extends IPSModuleStrict
     private function Decision(): array
     {
         $decision=$this->SeasonDecision();
+        if ($this->ReadAttributeString('Mode')==='auto') {
+            $state=$this->State();
+            $gate=scSeasonGate($state['seasonGate']??[],$decision['season'],time());
+            if ($gate['season']!==$decision['season']) $decision['reason']='Saisonwechsel wartet auf 48 Stunden Bestätigung und sieben Tage Mindesthaltezeit.';
+            $decision['season']=$gate['season'];
+        }
         // Im automatischen Sommer gilt die Heizpause auch bei Abwesenheit.
         if (IPS_VariableExists($this->ReadPropertyInteger('PresenceVariable'))&&!GetValue($this->ReadPropertyInteger('PresenceVariable'))&&!($this->ReadAttributeString('Mode')==='auto'&&$decision['season']==='summer')) return ['season'=>'away','reason'=>'Abwesenheit hat Vorrang.'];
         return $decision;
+    }
+
+    private function UpdateSeasonGate(): void
+    {
+        if ($this->ReadAttributeString('Mode')!=='auto') return;
+        $state=$this->State();
+        $state['seasonGate']=scSeasonGate($state['seasonGate']??[],$this->SeasonDecision()['season'],time());
+        $this->StoreState($state);
     }
 
     private function SeasonDecision(): array
@@ -650,9 +667,9 @@ class SVHeatingCenter extends IPSModuleStrict
     private function Control(): void
     {
         if ($this->ReadAttributeBoolean('TestMode')) {$this->Simulate(); return;}
-        // Bei einem PHP-Abbruch während eines Gerätebefehls nicht automatisch
-        // im nächsten Timerlauf weiterschreiben. Erst am Laufende freigeben.
-        $this->WriteAttributeBoolean('Active',false);
+        $this->UpdateSeasonGate();
+        // Normale Neustarts erhalten Active; unmittelbar vor Schreibbefehlen
+        // wird es gesperrt und erst nach erfolgreichem Lauf wieder freigegeben.
         $decision=$this->Decision(); $season=$decision['season']; $slot=$season==='away'?3:2;
         // Externe Änderungen des bisherigen Zentralprofils nicht übersteuern.
         $state=$this->State();
@@ -663,19 +680,31 @@ class SVHeatingCenter extends IPSModuleStrict
         foreach($this->Zones() as $room=>$zone) {
             $plan=$this->Plan($templates,$room,$season);
             if (!$plan) throw new Exception('Vorlage fehlt: '.$zone[0].' · '.self::SEASONS[$season]);
+            $this->ObserveLearning($room,$season);
             $runtime=$this->RuntimePlan($room,$season,true);$plan=$runtime['plan'];
             $state=$this->State();
-            if (($state['sent'][$room][$slot]['hash']??'')!==$this->Hash($plan)) $this->Transfer($room,$season,null,$plan);
+            if (($state['sent'][$room][$slot]['hash']??'')!==$this->Hash($plan)) {
+                // Persist the stop before the first write. A killed PHP process must
+                // never resume an uncertain device transaction on its own.
+                $this->WriteAttributeBoolean('Active',false);
+                $this->Transfer($room,$season,null,$plan);
+            }
             $address=$this->Address($room);
             $state=$this->State();
             if (empty($state['modeInitialized'][$room])) {
                 $valuesDescription=hpRpc('getParamsetDescription',[$address,'VALUES']);
                 if (isset($valuesDescription['SET_POINT_MODE'])&&(int)hpRpc('getValue',[$address,'SET_POINT_MODE'])!==0) {
+                    $this->WriteAttributeBoolean('Active',false);
                     hpRpc('setValue',[$address,'SET_POINT_MODE',0]);
+                    if ((int)hpRpc('getValue',[$address,'SET_POINT_MODE'])!==0) throw new Exception('Automatikmodus wurde nicht bestätigt.');
                 }
                 $state['modeInitialized'][$room]=true; $this->StoreState($state);
             }
-            if ((int)hpRpc('getValue',[$address,'ACTIVE_PROFILE'])!==$slot) hpRpc('setValue',[$address,'ACTIVE_PROFILE',$slot]);
+            if ((int)hpRpc('getValue',[$address,'ACTIVE_PROFILE'])!==$slot) {
+                $this->WriteAttributeBoolean('Active',false);
+                hpRpc('setValue',[$address,'ACTIVE_PROFILE',$slot]);
+                if ((int)hpRpc('getValue',[$address,'ACTIVE_PROFILE'])!==$slot) throw new Exception('Aktives Geräteprofil wurde nicht bestätigt.');
+            }
         }
         $state=$this->State();
         if ($season!=='away') $state['lastSeason']=$season;
@@ -712,11 +741,50 @@ class SVHeatingCenter extends IPSModuleStrict
         }
         $warm=$state['warmWeather']??[];
         $fresh=!empty($warm['last'])&&time()-$warm['last']<=1200&&$warm['last']<=time();
-        $result=scRuntimePlan($this->Plan($this->Templates(),$room,$season),$this->ReadAttributeString('Mode'),$season,
-            $fresh&&!empty($warm['active']),$actuals?min($actuals):null,(int)$now->format('N')-1,(int)$now->format('G')*60+(int)$now->format('i'),
+        $baseSeason=$season==='away'?$this->SeasonDecision()['season']:$season;
+        if ($season==='away'&&$this->ReadAttributeString('Mode')==='auto') $baseSeason=$state['seasonGate']['season']??$baseSeason;
+        if ($baseSeason==='away') $baseSeason=$state['lastSeason']??'autumn';
+        $plan=$this->Plan($this->Templates(),$room,$baseSeason);
+        if ($season==='away') $plan=scReducedPlan($plan,1.5);
+        $model=$state['learning'][$room][$baseSeason]??[];
+        $learned=$season!=='away'&&$season!=='summer'&&$this->ReadAttributeString('Mode')==='auto'&&($model['signature']??'')===$this->Hash($plan)&&($model['offset']??0)===-0.5;
+        if ($learned) $plan=scReducedPlan($plan,0.5,true);
+        $result=scRuntimePlan($plan,$this->ReadAttributeString('Mode'),$season,
+            !$learned&&$fresh&&!empty($warm['active']),$actuals?min($actuals):null,(int)$now->format('N')-1,(int)$now->format('G')*60+(int)$now->format('i'),
             $state['runtimeCorrection'][$scope][$room]??[],time());
         if ($persist) {$state['runtimeCorrection'][$scope][$room]=$result['state'];$this->StoreState($state);}
         return $result;
+    }
+
+    private function ObserveLearning(int $room,string $season): void
+    {
+        if ($room===4||!in_array($season,['spring','autumn','winter'],true)||$this->ReadAttributeString('Mode')!=='auto'||$this->ReadAttributeBoolean('TestMode')) return;
+        $state=$this->State();$plan=$this->Plan($this->Templates(),$room,$season);
+        $runtime=$this->RuntimePlan($room,$season);$target=$runtime['target'];
+        $today=(int)(new DateTimeImmutable('now',new DateTimeZone('Europe/Berlin')))->format('N')-1;
+        $values=array_column($plan[$today],1);$low=min($values);$high=max($values);
+        $presence=$this->ReadPropertyInteger('PresenceVariable');
+        $eligible=$high>$low&&$target>$low&&$target>=$high-1.0&&IPS_VariableExists($presence)&&GetValue($presence)===true&&empty($runtime['state']['active']);
+        $actual=[];$measured=time();$manual=false;
+        foreach($room===3?[3,4]:[$room] as $part) {
+            $zone=$this->Zones()[$part];
+            foreach([$zone[2],$zone[3]] as $id) {
+                $updated=IPS_VariableExists($id)?(int)(IPS_GetVariable($id)['VariableUpdated']??0):0;
+                if ($updated>time()||time()-$updated>1200) $eligible=false;
+                $measured=min($measured,$updated);
+            }
+            $value=$this->Num($zone[2]);$setpoint=$this->Num($zone[3]);
+            if ($value===null||$setpoint===null) $eligible=false;
+            if ($setpoint!==null&&abs($setpoint-$target)>0.01) {$eligible=false;$manual=true;}
+            if ($value!==null) $actual[]=$value;
+            $address=$this->Address($part);
+            $description=hpRpc('getParamsetDescription',[$address,'VALUES']);
+            // Without confirmed automatic mode, no observation is trustworthy.
+            if (!isset($description['SET_POINT_MODE'])) $eligible=false;
+            elseif ((int)hpRpc('getValue',[$address,'SET_POINT_MODE'])!==0||(int)hpRpc('getValue',[$address,'ACTIVE_PROFILE'])!==2) {$eligible=false;$manual=true;}
+        }
+        $state['learning'][$room][$season]=scLearningTick($state['learning'][$room][$season]??[],$this->Hash($plan),$actual?min($actual):null,$target,$measured,time(),$eligible,$manual);
+        $this->StoreState($state);
     }
 
     private function PlannedRooms(string $season,?int $onlyRoom=null,bool $persist=false): array
@@ -799,3 +867,4 @@ class SVHeatingCenter extends IPSModuleStrict
             'decision'=>$this->Decision(),'pending'=>$pending,'migrationBackup'=>$state['migrationBackup']??''];
     }
 }
+
