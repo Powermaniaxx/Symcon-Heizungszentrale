@@ -37,7 +37,13 @@ $m->a['TestMode']=false;
 $m->a['State']=json_encode(['seasonGate'=>['season'=>'autumn'],'lastSeason'=>'autumn']);
 $away=invoke($m,'RuntimePlan',1,'away');check($away['plan'][0][1][1]===19.5,'Away uses autumn minus 1.5, not stored away profile');
 $m->a['State']=json_encode(['seasonGate'=>['season'=>'winter'],'lastSeason'=>'winter']);
-check(invoke($m,'RuntimePlan',1,'away')['plan'][0][1][1]===20.5,'Away follows winter');
+check(invoke($m,'RuntimePlan',1,'away')['plan'][0][1][1]===(scWinterAllowed(new DateTimeImmutable())?20.5:19.5),'Away follows permitted season, including saved winter');
+$m->p['SeasonVariable']=999;$GLOBALS['values'][999]='Winter';
+if (!scWinterAllowed(new DateTimeImmutable())) {
+    check(invoke($m,'SeasonDecision')['season']==='autumn','External winter and stale weather cannot bypass date lock');
+    check(invoke($m,'Decision')['season']==='autumn','Saved gate cannot delay autumn');
+}
+$m->a['Mode']='winter';check(invoke($m,'SeasonDecision')['season']==='winter','Manual winter remains available');$m->a['Mode']='auto';
 $signature=invoke($m,'Hash',json_decode($m->a['Templates'],true)[1]['autumn']['plan']);
 $m->a['State']=json_encode(['learning'=>[1=>['autumn'=>['signature'=>$signature,'offset'=>-0.5]]]]);
 $learned=invoke($m,'RuntimePlan',1,'autumn');

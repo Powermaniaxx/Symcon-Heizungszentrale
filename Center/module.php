@@ -64,7 +64,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $decision=$this->Decision();$state=$this->State();
         $active=$this->ReadAttributeBoolean('Active');$testing=$this->ReadAttributeBoolean('TestMode');
         $season=$active&&!$testing?($state['currentSeason']??$decision['season']):$decision['season'];
-        return json_encode(['version'=>'1.9.0','status'=>$this->ReadAttributeString('Status'),
+        return json_encode(['version'=>'1.9.1','status'=>$this->ReadAttributeString('Status'),
             'control'=>['mode'=>$this->ReadAttributeString('Mode'),'active'=>$active,'testMode'=>$testing,
                 'season'=>$season,'seasonLabel'=>self::SEASONS[$season],
                 'manualSeason'=>$this->ReadAttributeString('LastManualMode'),'reason'=>$decision['reason']],
@@ -540,7 +540,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $decision=$this->SeasonDecision();
         if ($this->ReadAttributeString('Mode')==='auto') {
             $state=$this->State();
-            $gate=scSeasonGate($state['seasonGate']??[],$decision['season'],time());
+            $gate=scSeasonGate($state['seasonGate']??[],$decision['season'],time(),scWinterAllowed(new DateTimeImmutable()));
             if ($gate['season']!==$decision['season']) $decision['reason']='Saisonwechsel wartet auf 48 Stunden Bestätigung und sieben Tage Mindesthaltezeit.';
             $decision['season']=$gate['season'];
         }
@@ -553,11 +553,20 @@ class SVHeatingCenter extends IPSModuleStrict
     {
         if ($this->ReadAttributeString('Mode')!=='auto') return;
         $state=$this->State();
-        $state['seasonGate']=scSeasonGate($state['seasonGate']??[],$this->SeasonDecision()['season'],time());
+        $state['seasonGate']=scSeasonGate($state['seasonGate']??[],$this->SeasonDecision()['season'],time(),scWinterAllowed(new DateTimeImmutable()));
         $this->StoreState($state);
     }
 
     private function SeasonDecision(): array
+    {
+        $decision=$this->SeasonCandidate();
+        if ($this->ReadAttributeString('Mode')==='auto'&&$decision['season']==='winter'&&!scWinterAllowed(new DateTimeImmutable())) {
+            return ['season'=>'autumn','reason'=>'Herbst: automatischer Winterbetrieb frühestens ab 15. November.'];
+        }
+        return $decision;
+    }
+
+    private function SeasonCandidate(): array
     {
         $mode=$this->ReadAttributeString('Mode');
         if ($mode!=='auto') return ['season'=>$mode,'reason'=>'Manuell gewählt.'];
@@ -744,6 +753,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $baseSeason=$season==='away'?$this->SeasonDecision()['season']:$season;
         if ($season==='away'&&$this->ReadAttributeString('Mode')==='auto') $baseSeason=$state['seasonGate']['season']??$baseSeason;
         if ($baseSeason==='away') $baseSeason=$state['lastSeason']??'autumn';
+        if ($this->ReadAttributeString('Mode')==='auto'&&$baseSeason==='winter'&&!scWinterAllowed($now)) $baseSeason='autumn';
         $plan=$this->Plan($this->Templates(),$room,$baseSeason);
         if ($season==='away') $plan=scReducedPlan($plan,1.5);
         $model=$state['learning'][$room][$baseSeason]??[];

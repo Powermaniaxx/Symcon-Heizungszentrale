@@ -37,7 +37,16 @@ function scReducedPlan(array $plan,float $reduction,bool $heatingOnly=false): ar
     unset($point,$points);return scValidatePlan($plan);
 }
 
-function scSeasonGate(array $state,string $candidate,int $now): array {
+function scWinterAllowed(DateTimeImmutable $date): bool {
+    $date=$date->setTimezone(new DateTimeZone('Europe/Berlin'));
+    $month=(int)$date->format('n');$day=(int)$date->format('j');
+    return !($month===9||$month===10||($month===11&&$day<15));
+}
+
+function scSeasonGate(array $state,string $candidate,int $now,bool $winterAllowed=true): array {
+    if (!$winterAllowed&&$candidate==='winter') $candidate='autumn';
+    // A saved winter state must not prolong a season explicitly excluded by date.
+    if (!$winterAllowed&&($state['season']??null)==='winter') $state=[];
     $valid=['spring','summer','autumn','winter'];
     if (!in_array($state['season']??null,$valid,true)) return ['season'=>$candidate,'changed'=>$now];
     if ($now-($state['last']??$now)>7200) unset($state['candidate'],$state['since']);

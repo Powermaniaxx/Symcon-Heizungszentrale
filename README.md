@@ -1,5 +1,7 @@
 # Heizungszentrale für Symcon
 
+Version 1.9.1: Vom 1. September bis einschließlich 14. November ist automatischer Winterbetrieb gesperrt (Zeitzone Europe/Berlin). Auch Kältephasen, externe Saisonvariablen und gespeicherte Winterzustände führen in diesem Zeitraum zum Herbstplan. Die Sperre hebt einen gespeicherten Winterzustand ohne weitere Mindesthaltezeit auf. Ab 15. November darf die Wetterautomatik Winter wieder vorschlagen; ihre Bestätigungszeiten gelten weiterhin. Eine ausdrücklich manuelle Winterwahl bleibt jederzeit möglich. Die Abwesenheitsabsenkung folgt entsprechend dem Herbstplan.
+
 ## Version 1.9.0 – lokale Lernoptimierung
 
 Die bereits aktivierte Automatik lernt selbstständig pro Raum und Saison aus bestätigten Raumtemperaturen während anwesender Nutzung. Es werden keine manuellen Temperatureingaben als Wünsche übernommen und keine Daten an einen Lerndienst gesendet. Wochenpläne bleiben die Grundlage; Zeiten und gespeicherte Vorlagen werden nicht automatisch umgeschrieben. Homematic bleibt im automatischen Wochenplanbetrieb mit autonomem Geräteplan als Rückfalllösung.
