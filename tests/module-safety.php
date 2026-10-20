@@ -18,10 +18,16 @@ function IPS_VariableExists($id) {return isset($GLOBALS['values'][$id]);}
 function GetValue($id) {return $GLOBALS['values'][$id];}
 function IPS_GetVariable($id) {return ['VariableUpdated'=>time()];}
 function IPS_LogMessage($source,$message) {}
+function IPS_GetKernelVersion() {return $GLOBALS['kernelVersion']??'9.0';}
 require_once dirname(__DIR__).'/Center/module.php';
 function check($v,$message) {if (!$v) throw new Exception($message);}
 function invoke($object,$name,...$args) {return (new ReflectionMethod($object,$name))->invoke($object,...$args);}
 $m=new SVHeatingCenter();$zones=[];$templates=[];
+foreach(['8.2'=>false,'9.0'=>true,'9.0.1'=>true,'9.0 (Beta)'=>true,'9.1'=>false,'9.01'=>false,'10.0'=>false] as $version=>$hidden) {
+    $GLOBALS['kernelVersion']=(string)$version;
+    $template=invoke($m,'TileTemplate');
+    check(str_contains($template,'<h1 hidden>Heizungszentrale</h1>')===$hidden,'Title visibility must follow Symcon 9.0 only: '.$version);
+}
 foreach(range(1,8) as $room) {
     $zones[$room]=['Room '.$room,$room*10,$room*10+1,$room*10+2,$room*10+3];
     foreach(['spring'=>20.0,'summer'=>14.0,'autumn'=>21.0,'winter'=>22.0,'away'=>16.0] as $season=>$temp) $templates[$room][$season]=['plan'=>array_fill(0,7,[[0,17.0],[360,$temp]])];

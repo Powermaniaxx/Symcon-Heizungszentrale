@@ -1,5 +1,7 @@
 # Heizungszentrale für Symcon
 
+Version 1.9.2: Die Überschrift „Heizungszentrale“ innerhalb der Kachel wird unter Symcon 9.0 ausgeblendet. Auf anderen Symcon-Versionen bleibt sie sichtbar. Die Erkennung erfolgt anhand der tatsächlich laufenden Kernel-Version; Untertitel und Bedienelemente bleiben erhalten.
+
 Version 1.9.1: Vom 1. September bis einschließlich 14. November ist automatischer Winterbetrieb gesperrt (Zeitzone Europe/Berlin). Auch Kältephasen, externe Saisonvariablen und gespeicherte Winterzustände führen in diesem Zeitraum zum Herbstplan. Die Sperre hebt einen gespeicherten Winterzustand ohne weitere Mindesthaltezeit auf. Ab 15. November darf die Wetterautomatik Winter wieder vorschlagen; ihre Bestätigungszeiten gelten weiterhin. Eine ausdrücklich manuelle Winterwahl bleibt jederzeit möglich. Die Abwesenheitsabsenkung folgt entsprechend dem Herbstplan.
 
 ## Version 1.9.0 – lokale Lernoptimierung

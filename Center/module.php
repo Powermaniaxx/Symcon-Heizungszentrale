@@ -64,7 +64,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $decision=$this->Decision();$state=$this->State();
         $active=$this->ReadAttributeBoolean('Active');$testing=$this->ReadAttributeBoolean('TestMode');
         $season=$active&&!$testing?($state['currentSeason']??$decision['season']):$decision['season'];
-        return json_encode(['version'=>'1.9.1','status'=>$this->ReadAttributeString('Status'),
+        return json_encode(['version'=>'1.9.2','status'=>$this->ReadAttributeString('Status'),
             'control'=>['mode'=>$this->ReadAttributeString('Mode'),'active'=>$active,'testMode'=>$testing,
                 'season'=>$season,'seasonLabel'=>self::SEASONS[$season],
                 'manualSeason'=>$this->ReadAttributeString('LastManualMode'),'reason'=>$decision['reason']],
@@ -104,7 +104,15 @@ class SVHeatingCenter extends IPSModuleStrict
     public function GetVisualizationTile(): string
     {
         if (!$this->Configured()) return '<div style="padding:64px 24px;font:16px sans-serif">Bitte zuerst CCU-Adresse und Raumzuordnungen in der Instanz konfigurieren.</div>';
-        return str_replace('/*__STATE__*/null',json_encode($this->View(),JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_THROW_ON_ERROR),file_get_contents(__DIR__.'/tile.html'));
+        return str_replace('/*__STATE__*/null',json_encode($this->View(),JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_THROW_ON_ERROR),$this->TileTemplate());
+    }
+
+    private function TileTemplate(): string
+    {
+        $html=file_get_contents(__DIR__.'/tile.html');
+        $version=IPS_GetKernelVersion();
+        if (preg_match('/^9\.0(?:\D|$)/',$version)===1) $html=str_replace('<h1>Heizungszentrale</h1>','<h1 hidden>Heizungszentrale</h1>',$html);
+        return $html;
     }
 
     public function Refresh(): void
