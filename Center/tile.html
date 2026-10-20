@@ -74,6 +74,9 @@
  .roomPlan{padding:7px 6px}
 }
 @media(max-width:340px){.dashboardStats{grid-template-columns:1fr}.roomHeading strong{font-size:11px}.room .actual{font-size:23px}.room .temp small{font-size:10px}}
+.touchSliderProtection{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:10px 0 8px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+.touchSliderProtection button{min-height:36px;font-size:12px;font-weight:650}.touchSliderProtection .note{flex:1 1 190px}
+input[type=range]:disabled{opacity:.45;cursor:not-allowed}
 </style></head><body><div class="shell">
 <div class="overview">
 <header class="dashboardHead">
@@ -103,7 +106,7 @@
 <div id="manualPresets" class="auto hidden"><strong>Eigene manuelle Profile · alle Räume</strong><p class="note">Speichert die fünf manuellen Saisonpläne aller sieben Räume. Automatikpläne bleiben erhalten. Laden stellt auch die gespeicherte manuelle Saison wieder her.</p><div class="tools"><input id="presetName" type="text" maxlength="120" placeholder="Profilname, z. B. Urlaub zu Hause" aria-label="Name des manuellen Profils"><button id="presetSave">Profil für alle Räume speichern</button></div><div class="tools"><select id="presetSelect" aria-label="Gespeichertes manuelles Profil"></select><button id="presetLoad">Profil laden</button></div></div>
 <div id="profiles" class="profiles"></div><div id="empty" class="empty hidden"><p id="emptyReason">Für diesen Raum sind noch keine Gerätepläne eingelesen.</p><button id="loadEmpty" class="primary">Pläne aller Räume einlesen</button></div>
 <div id="planContent"><div id="days" class="days"></div><div class="scale"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><div id="timeline" class="timeline"></div><div id="segments" class="segments"></div>
-<div class="adjust"><div class="control"><label>Von <input id="fromClock" class="clock" aria-label="Beginn als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="fromRange" type="range" step="5" aria-label="Beginn verschieben"></div><div class="control"><label>Bis <input id="toClock" class="clock" aria-label="Ende als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="toRange" type="range" step="5" aria-label="Ende verschieben"></div><div class="control temperature"><label>Temperatur <input id="temperature" class="clock" type="number" min="4.5" max="30.5" step="0.5" aria-label="Temperatur in Grad Celsius"></label><input id="tempRange" type="range" min="4.5" max="30.5" step="0.5" aria-label="Temperatur ändern"></div></div>
+<div id="touchSliderProtection" class="touchSliderProtection hidden"><button type="button" id="touchSliderButton" aria-pressed="false">Schieberegler freigeben</button><span id="touchSliderHint" class="note">Scrollschutz aktiv. Uhrzeiten und Temperatur lassen sich weiterhin direkt eingeben.</span></div><div class="adjust"><div class="control"><label>Von <input id="fromClock" class="clock" aria-label="Beginn als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="fromRange" type="range" step="5" aria-label="Beginn verschieben"></div><div class="control"><label>Bis <input id="toClock" class="clock" aria-label="Ende als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="toRange" type="range" step="5" aria-label="Ende verschieben"></div><div class="control temperature"><label>Temperatur <input id="temperature" class="clock" type="number" min="4.5" max="30.5" step="0.5" aria-label="Temperatur in Grad Celsius"></label><input id="tempRange" type="range" min="4.5" max="30.5" step="0.5" aria-label="Temperatur ändern"></div></div>
 <p class="note">Von und Bis direkt eingeben. Benötigte Restzeiten davor und danach werden automatisch ergänzt. Der Tagesplan bleibt lückenlos von 00:00 bis 24:00.</p><div class="tools"><button id="split">＋ Abschnitt teilen</button><button id="remove">Abschnitt entfernen</button><button id="copyWeek">Auf So–Do kopieren</button><button id="copyWeekend">Auf Fr + Sa kopieren</button><button id="copyAll">Auf alle Tage kopieren</button></div>
 <div class="footer"><span id="deviceTarget" class="note"></span><div class="buttons"><button id="save" class="primary">Vorlage speichern</button><button id="send">An Heizung übertragen</button></div></div></div>
 <div id="status" class="status" role="status"></div></section>
@@ -114,6 +117,10 @@
 let state=/*__STATE__*/null;
 let roomId=1,season='winter',day=0,segment=0,draft=null,revision='',dirty=false,busy=false,requestTimer=null,pendingIntent=null,modalAction=null;
 let followPlan=true;
+// Native range sliders can move unintentionally while scrolling on a phone.
+// Touch screens require an explicit unlock for each slider gesture.
+const touchPointer=!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches);
+let sliderUnlocked=false;
 let pendingRequestId=null,requestCounter=0,seasonJobId=null,replyPollTimer=null,pendingPayload=null,previousJobId=null;const uiSession=Math.random().toString(36).slice(2);
 const names=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
 const short=['Mo','Di','Mi','Do','Fr','Sa','So'];
@@ -123,9 +130,9 @@ const time=v=>String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart
 const temp=v=>v==null?'–':Number(v).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 function selectedRoom(){return state.rooms.find(r=>r.id===roomId)||state.rooms[0]}
 function selectedTemplate(){return selectedRoom().profiles[season]}
-function loadDraft(){const entry=selectedTemplate();draft=entry.plan?clone(entry.plan):null;revision=entry.revision;dirty=false;segment=0}
+function loadDraft(){const entry=selectedTemplate();draft=entry.plan?clone(entry.plan):null;revision=entry.revision;dirty=false;segment=0;sliderUnlocked=false}
 function followCurrent(){if(dirty)return;season=state.decision.season;day=state.clock?.day??(new Date().getDay()+6)%7;loadDraft();const minute=state.clock?.minute??0;if(draft)draft[day].forEach((p,i)=>{if(p[0]<=minute)segment=i})}
-function safelySwitch(fn){if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dirty=false;fn();if(followPlan)followCurrent();else loadDraft();render()}
+function safelySwitch(fn){if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dirty=false;sliderUnlocked=false;fn();if(followPlan)followCurrent();else loadDraft();render()}
 function color(t){if(t<=16)return'#b9d9ea';if(t<=18)return'#b8ddd9';if(t<=20)return'#d4e7b4';if(t<=22)return'#f4dc9c';return'#efb69b'}
 function render(){
  if(!state||!state.rooms?.length)return;
@@ -200,18 +207,26 @@ function render(){
  $('reason').textContent=(state.decision?.reason||'')+(state.forecastMin!=null?' Vorhersage: '+temp(state.forecastMin)+' bis '+temp(state.forecastMax)+' °C.':'');
  if(!draft)return;
  segment=Math.min(segment,draft[day].length-1);
- $('days').replaceChildren(...short.map((label,i)=>{const b=document.createElement('button');b.className=i===day?'selected':'';b.textContent=label;const s=document.createElement('small');s.textContent=draft[i].length+' Abschn.';b.append(s);b.onclick=()=>{followPlan=false;day=i;segment=0;render()};return b}));
+ $('days').replaceChildren(...short.map((label,i)=>{const b=document.createElement('button');b.className=i===day?'selected':'';b.textContent=label;const s=document.createElement('small');s.textContent=draft[i].length+' Abschn.';b.append(s);b.onclick=()=>{followPlan=false;sliderUnlocked=false;day=i;segment=0;render()};return b}));
  $('timeline').replaceChildren(...draft[day].map((p,i)=>{const end=draft[day][i+1]?.[0]??1440;const b=document.createElement('button');b.className='period'+(i===segment?' active':'');b.style.width=((end-p[0])/1440*100)+'%';b.style.background=color(p[1]);b.textContent=end-p[0]>=90?temp(p[1])+'°':'';b.title=time(p[0])+'–'+time(end)+' · '+temp(p[1])+' °C';b.onclick=()=>{followPlan=false;segment=i;render()};return b}));
  $('segments').replaceChildren(...draft[day].map((p,i)=>{const b=document.createElement('button');b.textContent=time(p[0])+'–'+time(draft[day][i+1]?.[0]??1440)+' · '+temp(p[1])+'°';b.className=i===segment?'selected':'';b.onclick=()=>{followPlan=false;segment=i;render()};return b}));
  refreshControls();$('deviceTarget').textContent=state.seasons[season]+' → '+(season==='away'?'Abwesenheit':'Normal');$('save').disabled=!dirty;$('send').disabled=dirty||state.active;
 }
 function refreshControls(){
  const p=draft[day][segment],end=draft[day][segment+1]?.[0]??1440;
+ const touchLocked=touchPointer&&!sliderUnlocked;
+ $('touchSliderProtection').classList.toggle('hidden',!touchPointer);
+ $('touchSliderButton').textContent=sliderUnlocked?'Schieberegler sperren':'Schieberegler freigeben';
+ $('touchSliderButton').setAttribute('aria-pressed',String(sliderUnlocked));
+ $('touchSliderHint').textContent=sliderUnlocked?'Regler freigegeben; nach dem Ziehen automatisch wieder gesperrt.':'Scrollschutz aktiv. Uhrzeiten und Temperatur lassen sich weiterhin direkt eingeben.';
  if(document.activeElement!==$('fromClock'))$('fromClock').value=time(p[0]);if(document.activeElement!==$('toClock'))$('toClock').value=time(end);if(document.activeElement!==$('temperature'))$('temperature').value=p[1];$('tempRange').value=p[1];
  $('fromRange').min=segment?draft[day][segment-1][0]+5:0;$('fromRange').max=end-5;$('fromRange').value=p[0];
  $('toRange').min=p[0]+5;$('toRange').max=draft[day][segment+2]?.[0]-5||1440;$('toRange').value=end;
- $('fromRange').disabled=$('fromClock').disabled=segment===0&&draft[day].length>=13;
- $('toRange').disabled=$('toClock').disabled=segment===draft[day].length-1&&draft[day].length>=13;
+ $('fromClock').disabled=segment===0&&draft[day].length>=13;
+ $('fromRange').disabled=touchLocked||$('fromClock').disabled;
+ $('toClock').disabled=segment===draft[day].length-1&&draft[day].length>=13;
+ $('toRange').disabled=touchLocked||$('toClock').disabled;
+ $('tempRange').disabled=touchLocked;
  $('split').disabled=draft[day].length>=13||end-p[0]<10;$('remove').disabled=draft[day].length===1;
 }
 function changed(){dirty=true;followPlan=false;render()}
@@ -232,6 +247,10 @@ function setBoundary(which,value){
 function parseClock(text){if(!/^\d{2}:\d{2}$/.test(text))return null;const [h,m]=text.split(':').map(Number);return h>=0&&h<=24&&m>=0&&m<60&&(h<24||m===0)?h*60+m:null}
 function setTemp(value){if(!Number.isFinite(value)||value<4.5||value>30.5||Math.abs(value*2-Math.round(value*2))>.001)return;draft[day][segment][1]=value;changed()}
 for(const id of ['fromClock','toClock','temperature'])$(id).onfocus=()=>{followPlan=false};
+$('touchSliderButton').onclick=()=>{sliderUnlocked=!sliderUnlocked;refreshControls()};
+for(const id of ['fromRange','toRange','tempRange'])$(id).addEventListener('pointerup',()=>{
+ if(touchPointer&&sliderUnlocked){sliderUnlocked=false;refreshControls()}
+});
 $('fromRange').oninput=e=>setBoundary('from',Number(e.target.value));$('toRange').oninput=e=>setBoundary('to',Number(e.target.value));
 for(const [id,which]of [['fromClock','from'],['toClock','to']])$(id).onchange=e=>{const v=parseClock(e.target.value);if(v===null||!setBoundary(which,v)){window.alert('Bitte eine gültige Uhrzeit innerhalb der benachbarten Abschnitte eingeben.');e.target.value=time(which==='from'?draft[day][segment][0]:(draft[day][segment+1]?.[0]??1440));refreshControls()}};
 $('tempRange').oninput=e=>setTemp(Number(e.target.value));$('temperature').onchange=e=>setTemp(Number(e.target.value));
