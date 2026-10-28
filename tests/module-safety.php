@@ -1,9 +1,11 @@
 <?php
 // Exercise the real module with an in-memory Symcon API; no CCU is connected.
+define('IPS_KERNELSTARTED',10001);
 class IPSModuleStrict {
     public array $a=['State'=>'{}','Templates'=>'{}','ManualTemplates'=>'{}','Mode'=>'auto','TestMode'=>false,'Active'=>true];
     public array $p=['RootID'=>0,'CCUHost'=>'ccu.local','LivingGroup'=>'group','ZoneConfiguration'=>'{}'];
     public function ApplyChanges(): void {}
+    public function RegisterMessage($sender,$message) {}
     public function ReadAttributeString($n) {return $this->a[$n]??'';}
     public function ReadAttributeBoolean($n) {return $this->a[$n]??false;}
     public function WriteAttributeString($n,$v) {$this->a[$n]=$v;}
@@ -41,9 +43,9 @@ try {invoke($m,'Transfer',1,'winter');throw new Exception('Write escaped test mo
 catch(Exception $e) {check(str_contains($e->getMessage(),'Testmodus'),'Test guard must precede all RPC');}
 $m->a['TestMode']=false;
 $m->a['State']=json_encode(['seasonGate'=>['season'=>'autumn'],'lastSeason'=>'autumn']);
-$away=invoke($m,'RuntimePlan',1,'away');check($away['plan'][0][1][1]===19.5,'Away uses autumn minus 1.5, not stored away profile');
+$away=invoke($m,'RuntimePlan',1,'away');check($away['plan'][0][0][1]===15.0,'Away uses autumn minus 1.5, not stored away profile');
 $m->a['State']=json_encode(['seasonGate'=>['season'=>'winter'],'lastSeason'=>'winter']);
-check(invoke($m,'RuntimePlan',1,'away')['plan'][0][1][1]===(scWinterAllowed(new DateTimeImmutable())?20.5:19.5),'Away follows permitted season, including saved winter');
+check(invoke($m,'RuntimePlan',1,'away')['plan'][0][0][1]===(scWinterAllowed(new DateTimeImmutable())?15.5:15.0),'Away follows permitted season, including saved winter');
 $m->p['SeasonVariable']=999;$GLOBALS['values'][999]='Winter';
 if (!scWinterAllowed(new DateTimeImmutable())) {
     check(invoke($m,'SeasonDecision')['season']==='autumn','External winter and stale weather cannot bypass date lock');

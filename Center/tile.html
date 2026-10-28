@@ -103,15 +103,16 @@ input[type=range]:disabled{opacity:.45;cursor:not-allowed}
 </div>
 <div class="roomsPanel"><div class="roomsHead"><h2>Räume</h2><span id="roomCount" class="roomCount"></span></div>
 <div id="setupNotice" class="notice setupNotice hidden"><span id="missingPlans"></span> <button id="loadAll" class="primary">Alle Räume einlesen</button></div><div id="rooms" class="rooms"></div></div>
+<details class="auto" style="margin-bottom:14px" open><summary>Absenkungen · Verlauf</summary><p class="note">Plan bestätigt = Heizplan und aktives Profil geprüft. Sollwert beobachtet = Rückmeldung aus Symcon; keine gemessene Raumtemperatur. Die letzten 200 Einträge bleiben nach einem Neustart erhalten.</p><div id="reductionHistory"></div></details>
 <section class="editor"><div class="editorHead"><div><div class="eyebrow">Heizplan bearbeiten</div><h2 id="roomName"></h2></div><span id="saveState" class="note"></span></div>
-<div class="auto"><strong id="currentPlanTitle"></strong><p id="currentPlanValues"></p><p id="currentPlanReason" class="note"></p><p id="lastPlanTransfer" class="note"></p></div>
+<div class="auto"><strong id="currentPlanTitle"></strong><p id="currentPlanValues"></p><p id="currentPlanReason" class="note"></p><p id="lastPlanTransfer" class="note"></p><div class="tools"><span id="adoptTargetHint" class="note"></span><button id="adoptTarget" class="primary hidden">In die Automatik übernehmen</button></div></div>
 <div class="tools"><span id="editorViewHint" class="note"></span><button id="followPlan">Aktuellen Automatikplan anzeigen</button></div>
 <div id="manualPresets" class="auto hidden"><strong>Eigene manuelle Profile · alle Räume</strong><p class="note">Speichert die fünf manuellen Saisonpläne aller sieben Räume. Automatikpläne bleiben erhalten. Laden stellt auch die gespeicherte manuelle Saison wieder her.</p><div class="tools"><input id="presetName" type="text" maxlength="120" placeholder="Profilname, z. B. Urlaub zu Hause" aria-label="Name des manuellen Profils"><button id="presetSave">Profil für alle Räume speichern</button></div><div class="tools"><select id="presetSelect" aria-label="Gespeichertes manuelles Profil"></select><button id="presetLoad">Profil laden</button></div></div>
 <div id="profiles" class="profiles"></div><div id="empty" class="empty hidden"><p id="emptyReason">Für diesen Raum sind noch keine Gerätepläne eingelesen.</p><button id="loadEmpty" class="primary">Pläne aller Räume einlesen</button></div>
 <div id="planContent"><div id="days" class="days"></div><div class="scale"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><div id="timeline" class="timeline"></div><div id="segments" class="segments"></div>
 <div id="touchSliderProtection" class="touchSliderProtection hidden"><button type="button" id="touchSliderButton" aria-pressed="false">Schieberegler freigeben</button><span id="touchSliderHint" class="note">Scrollschutz aktiv. Uhrzeiten und Temperatur lassen sich weiterhin direkt eingeben.</span></div><div class="adjust"><div class="control"><label>Von <input id="fromClock" class="clock" aria-label="Beginn als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="fromRange" type="range" step="5" aria-label="Beginn verschieben"></div><div class="control"><label>Bis <input id="toClock" class="clock" aria-label="Ende als Uhrzeit" maxlength="5" inputmode="text" placeholder="HH:MM"></label><input id="toRange" type="range" step="5" aria-label="Ende verschieben"></div><div class="control temperature"><label>Temperatur <input id="temperature" class="clock" type="number" min="4.5" max="30.5" step="0.5" aria-label="Temperatur in Grad Celsius"></label><input id="tempRange" type="range" min="4.5" max="30.5" step="0.5" aria-label="Temperatur ändern"></div></div>
 <p class="note">Von und Bis direkt eingeben. Benötigte Restzeiten davor und danach werden automatisch ergänzt. Der Tagesplan bleibt lückenlos von 00:00 bis 24:00.</p><div class="tools"><button id="split">＋ Abschnitt teilen</button><button id="remove">Abschnitt entfernen</button><button id="copyWeek">Auf So–Do kopieren</button><button id="copyWeekend">Auf Fr + Sa kopieren</button><button id="copyAll">Auf alle Tage kopieren</button></div>
-<div class="footer"><span id="deviceTarget" class="note"></span><div class="buttons"><button id="save" class="primary">Vorlage speichern</button><button id="send">An Heizung übertragen</button></div></div></div>
+<div class="footer"><span id="deviceTarget" class="note"></span><div class="buttons"><button id="save" class="primary">Vorlage speichern</button><button id="adoptAutomation" class="primary">In die Automatik übernehmen</button><button id="send">An Heizung übertragen</button></div></div><p id="adoptAutomationHint" class="note"></p></div>
 <div id="status" class="status" role="status"></div></section>
 <details id="seasonProgress" class="notice auto hidden"><summary id="seasonProgressText"></summary><progress id="seasonProgressBar" max="7" value="0" style="width:100%" aria-label="Fortschritt Winter und Herbst"></progress><p id="seasonProgressDetail"></p></details><details id="simulation" class="auto hidden"><summary>Letztes Testergebnis</summary><p id="simulationTime" class="note"></p><div id="simulationRows"></div></details>
 <details class="auto"><summary>Steuerung und weitere Funktionen</summary><div class="row"><button id="testToggle">Echtbetrieb vorbereiten</button><button id="simulate">Jetzt testen</button><button id="activate">Steuerung aktivieren</button><button id="pause">Steuerung pausieren</button><button id="load">Gerätepläne einlesen</button><button id="prepareSeasons">Winter übernehmen &amp; Herbst ableiten</button></div><p class="note">Winter/Herbst einrichten: übernimmt die Winterzeiten und Temperaturen aus Homematic-Profil 2 für alle Räume. Für die Heizgruppe dient das konfigurierte physische Quellgerät als Winterplan-Quelle. Herbst wird in den wärmsten Tagesphasen 1 °C kühler und je 30 Minuten kürzer. Kurze Phasen bleiben erhalten; gleichmäßige Tage werden nur abgesenkt. Ersetzt nach Sicherung die beiden Automatikvorlagen in Symcon. Manuelle Profile bleiben erhalten. Nur im Testmodus möglich.</p><p id="reason" class="note"></p><p class="note">Im Thermostat werden nur Normal und Abwesenheit genutzt. Ein weiterer Speicherplatz bleibt als Reserve erhalten. Abwesenheit hat auch im manuellen Modus Vorrang; im automatischen Sommer bleiben alle Räume bei 14 °C. Die Vorhersage wird angezeigt; die Saisonwahl nutzt frische Messwerte und deren längerfristige Mittel. Zusatzabsenkung nur automatisch in Frühjahr/Herbst: ab 19 °C für 30 Minuten, Rückkehr nach 30 Minuten bis 18,5 °C. Zu kühle Räume und Nachtabsenkung haben Vorrang. Sommer: 24 Stunden 14 °C, bis AUS mit Frostschutz bestätigt ist.</p></details>
@@ -120,6 +121,7 @@ input[type=range]:disabled{opacity:.45;cursor:not-allowed}
 let state=/*__STATE__*/null;
 let roomId=1,season='winter',day=0,segment=0,draft=null,revision='',dirty=false,busy=false,requestTimer=null,pendingIntent=null,modalAction=null;
 let followPlan=true;
+let automationRevision='',draftMode='auto';
 // Native range sliders can move unintentionally while scrolling on a phone.
 // Touch screens require an explicit unlock for each slider gesture.
 const touchPointer=!!(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches);
@@ -133,12 +135,13 @@ const time=v=>String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart
 const temp=v=>v==null?'–':Number(v).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 function selectedRoom(){return state.rooms.find(r=>r.id===roomId)||state.rooms[0]}
 function selectedTemplate(){return selectedRoom().profiles[season]}
-function loadDraft(){const entry=selectedTemplate();draft=entry.plan?clone(entry.plan):null;revision=entry.revision;dirty=false;segment=0;sliderUnlocked=false}
+function loadDraft(){const entry=selectedTemplate();draft=entry.plan?clone(entry.plan):null;revision=entry.revision;automationRevision=selectedRoom().automationProfiles?.[season]?.revision??'';draftMode=state.mode;dirty=false;segment=0;sliderUnlocked=false}
 function followCurrent(){if(dirty)return;season=state.decision.season;day=state.clock?.day??(new Date().getDay()+6)%7;loadDraft();const minute=state.clock?.minute??0;if(draft)draft[day].forEach((p,i)=>{if(p[0]<=minute)segment=i})}
 function safelySwitch(fn){if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dirty=false;sliderUnlocked=false;fn();if(followPlan)followCurrent();else loadDraft();render()}
 function color(t){if(t<=16)return'#b9d9ea';if(t<=18)return'#b8ddd9';if(t<=20)return'#d4e7b4';if(t<=22)return'#f4dc9c';return'#efb69b'}
 function render(){
  if(!state||!state.rooms?.length)return;
+ $('reductionHistory').replaceChildren(...(state.reductionHistory?.length?state.reductionHistory: [null]).map(e=>{const p=document.createElement('p');p.className='note';p.textContent=e?new Date(e.at*1000).toLocaleString('de-DE',{timeZone:'Europe/Berlin'})+' · '+e.room+' · '+(e.kind==='targetObserved'?'Sollwert beobachtet':'Plan bestätigt')+' · '+(e.from==null?'vorher unbekannt':temp(e.from)+' °C')+' → '+temp(e.to)+' °C · '+e.season+' · '+e.reason:'Seit diesem Update noch keine bestätigte Absenkung protokolliert.';return p}));
  $('outside').textContent='Außen '+temp(state.outside)+' °C';$('automation').textContent=state.active?(state.mode==='auto'?'Symcon-Automatik aktiv':'Manueller Plan aktiv'):'Symcon-Regelung nicht aktiv';
  const testing=state.testMode!==false;
  $('testNotice').classList.toggle('hidden',!testing);
@@ -163,6 +166,13 @@ function render(){
  $('currentPlanValues').textContent=(state.clock?'Heute '+names[state.clock.day]+', '+state.clock.date+' · '+time(state.clock.minute)+' Uhr. ':'')+(current&&!current.error?'Geplant '+temp(current.target)+' °C bis '+time(current.until)+', danach '+temp(current.nextTarget)+' °C. ':current?.error||'')+' Geräte-Soll: '+(room.parts?.length?room.parts.map(x=>x.name+' '+temp(x.target)+' °C').join(' / '):temp(room.target)+' °C');
  $('currentPlanReason').textContent=state.decision.reason+' '+(current?.runtimeReason||'')+(current?.correction?' Wochenplan: '+temp(current.baseline)+' °C; Zusatzkorrektur: '+temp(current.correction)+' °C.':'')+(testing?' Im Testmodus sendet diese Zentrale keine Gerätebefehle.':'');
  $('lastPlanTransfer').textContent=current?.lastTransfer?'Letzte bestätigte Planübertragung: '+current.lastTransferSeason+' · '+new Date(current.lastTransfer*1000).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'Noch keine bestätigte Planübertragung durch diese Zentrale.';
+ const candidate=room.automationTarget;
+ $('adoptTarget').classList.toggle('hidden',!candidate?.available);$('adoptTarget').disabled=busy||dirty;
+ $('adoptTargetHint').textContent=candidate?.available?'Geräte-Soll '+temp(candidate.target)+' °C in '+state.seasons[candidate.season]+' übernehmen: '+names[candidate.day]+' '+time(candidate.from)+'–'+time(candidate.until)+' Uhr (bisher '+temp(candidate.previous)+' °C).'+(dirty?' Zuerst den Entwurf speichern oder verwerfen.':''):(candidate?.reason??'');
+ const seasonal=season!=='away',automatic=room.automationProfiles?.[season]?.plan;
+ $('adoptAutomation').classList.toggle('hidden',!seasonal);
+ $('adoptAutomation').disabled=busy||!draft||(!dirty&&JSON.stringify(draft)===JSON.stringify(automatic));
+ $('adoptAutomationHint').textContent=seasonal?'Übernimmt Temperaturen und Zeiten des angezeigten Wochenplans für '+room.name+' · '+state.seasons[season]+'.'+(state.mode!=='auto'?' Der bearbeitete manuelle Plan wird ebenfalls gespeichert.':'')+(season==='summer'?' Die automatische Sommer-Heizpause mit 14 °C hat Vorrang.':' Wetter- und Abwesenheitsregeln bleiben wirksam.'):'Abwesenheit wird automatisch aus der jeweiligen Saisonvorlage abgeleitet. Änderungen für die Automatik bitte dort übernehmen.';
  $('editorViewHint').textContent=(followPlan?'Anzeige folgt der aktuellen Auswahl: ':'Zum Bearbeiten geöffnet: ')+state.seasons[season]+' · '+names[day];
  $('followPlan').textContent=state.mode==='auto'?'Aktuellen Automatikplan anzeigen':'Aktuellen manuellen Plan anzeigen';$('followPlan').classList.toggle('hidden',followPlan&&!dirty);
  $('manualPresets').classList.toggle('hidden',state.mode==='auto');
@@ -305,6 +315,16 @@ $('followPlan').onclick=()=>safelySwitch(()=>{followPlan=true});
 $('presetSave').onclick=()=>dispatch('presetSave',{name:$('presetName').value,revision,plan:draft});
 $('presetLoad').onclick=()=>{if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dispatch('presetLoad',{presetId:$('presetSelect').value})};
 $('save').onclick=()=>dispatch('save',{revision,plan:draft});$('refresh').onclick=()=>dispatch('refresh');
+$('adoptAutomation').onclick=()=>{
+ if(busy||!draft||season==='away')return;
+ const payload={room:roomId,season,revision,automationRevision,mode:draftMode,plan:clone(draft)};
+ modal('In die Automatik übernehmen?',selectedRoom().name+' · '+state.seasons[season]+': Der angezeigte Wochenplan mit allen Temperaturen und Zeiten wird als Automatikvorlage gespeichert. Die bisherige Vorlage wird gesichert.'+(state.mode!=='auto'?' Der bearbeitete manuelle Plan wird ebenfalls gespeichert; die Betriebsart bleibt manuell.':'')+(season==='summer'?' Die automatische Sommer-Heizpause bleibt bei 14 °C.':' Wetter- und Abwesenheitsregeln bleiben wirksam.'),'In die Automatik übernehmen',()=>dispatch('adoptAutomation',payload));
+};
+$('adoptTarget').onclick=()=>{
+ const c=selectedRoom().automationTarget;if(busy||dirty||!c?.available)return;
+ const payload={room:roomId,season:c.season,token:c.token};
+ modal('Solltemperatur in die Automatik übernehmen?',selectedRoom().name+' · '+state.seasons[c.season]+': '+temp(c.target)+' °C für '+names[c.day]+' '+time(c.from)+'–'+time(c.until)+' Uhr speichern? Das gilt künftig jede Woche in dieser Saison. Andere Abschnitte und Wochentage bleiben erhalten. Die bisherige Vorlage wird gesichert. Wetter- und Abwesenheitsregeln bleiben wirksam.','In die Automatik übernehmen',()=>dispatch('adoptTarget',payload));
+};
 $('load').onclick=()=>{if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dispatch('import')};
 $('loadAll').onclick=()=>{if(dirty&&!window.confirm('Ungespeicherte Änderungen verwerfen?'))return;dispatch('importAll')};
 $('loadEmpty').onclick=()=>dispatch('importAll');
@@ -334,6 +354,10 @@ function handleMessage(data){
  if(requestTimer)clearTimeout(requestTimer);if(replyPollTimer)clearInterval(replyPollTimer);const editingClock=['fromClock','toClock','temperature'].includes(document.activeElement?.id);const intent=pendingIntent;pendingIntent=null;pendingRequestId=null;busy=false;$('busy').classList.add('hidden');
  if(data.error&&!data.rooms){seasonJobId=null;window.alert(data.error);return}
  state=data;if((intent==='mode'||intent==='presetLoad')&&!data.error){followPlan=true;dirty=false}
+ if(intent==='adoptAutomation'&&!data.error&&pendingPayload?.room===roomId&&pendingPayload?.season===season){
+  if(JSON.stringify(draft)===JSON.stringify(pendingPayload.plan))dirty=false;
+  revision=selectedTemplate().revision;automationRevision=selectedRoom().automationProfiles?.[season]?.revision??'';draftMode=state.mode;
+ }
  if(!data.error){if(intent==='presetSave')dirty=false;if(followPlan&&!dirty)followCurrent();else if(intent==='save'||intent==='import'||intent==='importAll'||(intent==='winterAutumnCommit'&&!dirty)||intent==='presetSave'||(!dirty&&intent!=='preview'&&!editingClock))loadDraft()}render();
  if(data.error){seasonJobId=null;window.alert(data.error);return}
  if(intent==='winterAutumnStart'){seasonJobId=state.seasonPreparation?.id;advanceSeasonPreparation();return}

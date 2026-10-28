@@ -1,9 +1,13 @@
 <?php
+require_once __DIR__ . '/AutomationAdoption.php';
+require_once __DIR__ . '/AbsenceHistory.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/learning.php';
 
 class SVHeatingCenter extends IPSModuleStrict
 {
+    use AutomationAdoption;
+    use AbsenceHistory;
     private const SEASONS=['spring'=>'Frühjahr','summer'=>'Sommer','autumn'=>'Herbst','winter'=>'Winter','away'=>'Abwesenheit'];
 
 
@@ -35,6 +39,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $this->RegisterAttributeString('LastActionReply','{}');
         $this->RegisterAttributeString('State','{}');
         $this->RegisterAttributeString('Pending','');
+        $this->RegisterAttributeBoolean('StartupPending',false);
         $this->RegisterAttributeBoolean('Active',false);
         $this->RegisterAttributeBoolean('TestMode',true);
         $this->RegisterAttributeString('Mode','auto');
@@ -46,6 +51,7 @@ class SVHeatingCenter extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
+        $this->RegisterMessage(0,IPS_KERNELSTARTED);
         if ($this->ReadAttributeString('Mode')!=='auto') $this->WriteAttributeString('LastManualMode',$this->ReadAttributeString('Mode'));
         if ($this->ReadAttributeBoolean('TestMode')) $this->WriteAttributeBoolean('Active',false);
         $this->SetVisualizationType(defined('INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN')?constant('INSTANCE_VISUALIZATION_TYPE_HTML_FULLSCREEN'):1);
@@ -64,7 +70,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $decision=$this->Decision();$state=$this->State();
         $active=$this->ReadAttributeBoolean('Active');$testing=$this->ReadAttributeBoolean('TestMode');
         $season=$active&&!$testing?($state['currentSeason']??$decision['season']):$decision['season'];
-        return json_encode(['version'=>'1.9.2','status'=>$this->ReadAttributeString('Status'),
+        return json_encode(['version'=>'1.10.0','status'=>$this->ReadAttributeString('Status'),
             'control'=>['mode'=>$this->ReadAttributeString('Mode'),'active'=>$active,'testMode'=>$testing,
                 'season'=>$season,'seasonLabel'=>self::SEASONS[$season],
                 'manualSeason'=>$this->ReadAttributeString('LastManualMode'),'reason'=>$decision['reason']],
@@ -121,6 +127,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $lock='SVHZ_'.$this->InstanceID;
         if (!IPS_SemaphoreEnter($lock,1)) return;
         try {
+            $this->ResumeAfterStartup();
             $this->SampleWeather();
             $this->UpdateSeasonGate();
             if ($this->ReadAttributeBoolean('Active')) $this->Control();
@@ -171,6 +178,8 @@ class SVHeatingCenter extends IPSModuleStrict
                     }
                     $this->WriteAttributeString('Status',$readErrors?'Einlesen abgeschlossen, aber nicht für alle Räume: '.implode(' | ',$readErrors):'Alle Räume eingelesen. Fünf Vorlagen je Raum sind bereit; vorhandene Bearbeitungen bleiben erhalten.'); break;
                 case 'save': $this->SaveTemplate($room,$season,$p); break;
+                case 'adoptAutomation': $this->AdoptAutomation($room,$season,$p); break;
+                case 'adoptTarget': $this->AdoptAutomationTarget($room,$p); break;
                 case 'preview': $this->Preview($room,$season); break;
                 case 'publish': $this->Publish($room,$season); break;
                 case 'activate': $this->Activate(); break;
@@ -189,7 +198,9 @@ class SVHeatingCenter extends IPSModuleStrict
             if($requestId!==null) $this->WriteAttributeString('LastActionReply',json_encode(['requestId'=>$requestId,'action'=>$p['action']??'','success'=>true,'at'=>time()],JSON_THROW_ON_ERROR));
             $view=$this->View();$view['requestId']=$requestId;$this->SendView($view);
         } catch (Throwable $e) {
-            if ($this->ReadAttributeBoolean('Active')) $this->WriteAttributeBoolean('Active',false);
+            // These actions only save templates. A stale editor must not pause heating.
+            if (!in_array($p['action']??'', ['adoptAutomation','adoptTarget'],true)
+                &&$this->ReadAttributeBoolean('Active')) $this->WriteAttributeBoolean('Active',false);
             $this->WriteAttributeString('Status','Fehler: '.$e->getMessage());
             if($requestId!==null) $this->WriteAttributeString('LastActionReply',json_encode(['requestId'=>$requestId,'action'=>$p['action']??'','success'=>false,'error'=>$e->getMessage(),'at'=>time()],JSON_THROW_ON_ERROR));
             $state=$this->State();
@@ -685,7 +696,7 @@ class SVHeatingCenter extends IPSModuleStrict
     {
         if ($this->ReadAttributeBoolean('TestMode')) {$this->Simulate(); return;}
         $this->UpdateSeasonGate();
-        // Normale Neustarts erhalten Active; unmittelbar vor Schreibbefehlen
+        // Unmittelbar vor Schreibbefehlen
         // wird es gesperrt und erst nach erfolgreichem Lauf wieder freigegeben.
         $decision=$this->Decision(); $season=$decision['season']; $slot=$season==='away'?3:2;
         // Externe Änderungen des bisherigen Zentralprofils nicht übersteuern.
@@ -699,12 +710,14 @@ class SVHeatingCenter extends IPSModuleStrict
             if (!$plan) throw new Exception('Vorlage fehlt: '.$zone[0].' · '.self::SEASONS[$season]);
             $this->ObserveLearning($room,$season);
             $runtime=$this->RuntimePlan($room,$season,true);$plan=$runtime['plan'];
+            $changed=false;
             $state=$this->State();
             if (($state['sent'][$room][$slot]['hash']??'')!==$this->Hash($plan)) {
                 // Persist the stop before the first write. A killed PHP process must
                 // never resume an uncertain device transaction on its own.
                 $this->WriteAttributeBoolean('Active',false);
                 $this->Transfer($room,$season,null,$plan);
+                $changed=true;
             }
             $address=$this->Address($room);
             $state=$this->State();
@@ -721,7 +734,9 @@ class SVHeatingCenter extends IPSModuleStrict
                 $this->WriteAttributeBoolean('Active',false);
                 hpRpc('setValue',[$address,'ACTIVE_PROFILE',$slot]);
                 if ((int)hpRpc('getValue',[$address,'ACTIVE_PROFILE'])!==$slot) throw new Exception('Aktives Geräteprofil wurde nicht bestätigt.');
+                $changed=true;
             }
+            $this->RecordControlHistory($room,$season,$runtime,$changed);
         }
         $state=$this->State();
         if ($season!=='away') $state['lastSeason']=$season;
@@ -763,7 +778,7 @@ class SVHeatingCenter extends IPSModuleStrict
         if ($baseSeason==='away') $baseSeason=$state['lastSeason']??'autumn';
         if ($this->ReadAttributeString('Mode')==='auto'&&$baseSeason==='winter'&&!scWinterAllowed($now)) $baseSeason='autumn';
         $plan=$this->Plan($this->Templates(),$room,$baseSeason);
-        if ($season==='away') $plan=scReducedPlan($plan,1.5);
+        if ($season==='away') $plan=scAbsencePlan($plan,$baseSeason,(string)$this->Zones()[$room][0]);
         $model=$state['learning'][$room][$baseSeason]??[];
         $learned=$season!=='away'&&$season!=='summer'&&$this->ReadAttributeString('Mode')==='auto'&&($model['signature']??'')===$this->Hash($plan)&&($model['offset']??0)===-0.5;
         if ($learned) $plan=scReducedPlan($plan,0.5,true);
@@ -781,6 +796,7 @@ class SVHeatingCenter extends IPSModuleStrict
         $result=scRuntimePlan($plan,$this->ReadAttributeString('Mode'),$season,
             !$learned&&$fresh&&!empty($warm['active']),$actuals?min($actuals):null,(int)$now->format('N')-1,(int)$now->format('G')*60+(int)$now->format('i'),
             $state['runtimeCorrection'][$scope][$room]??[],time());
+        if ($season==='away') $result['reason']=self::SEASONS[$baseSeason].'-Abwesenheit: '.($baseSeason==='autumn'?'Plan −1,5 °C, mindestens 14 °C (niedrigere Werte bleiben); übrige Räume höchstens 15 °C, Wohnzimmer mindestens 18 °C, Schlafzimmer 14 °C.':'Saisonplan −1,5 °C, mindestens 14 °C; niedrigere Werte bleiben.');
         if (isset($preheat)&&$preheat['minutes']>0) {
             $result['reason'].=' '.$preheat['reason'];
             $result['preheatMinutes']=$preheat['minutes'];
@@ -878,7 +894,8 @@ class SVHeatingCenter extends IPSModuleStrict
                 if ($profile!==$leftProfile) $profile=null;
             }
             $rooms[]=['id'=>$room,'name'=>$zone[0],'actual'=>$actual,'target'=>$target,'parts'=>$parts,
-                'deviceProfile'=>$profile,'profiles'=>$profiles];
+                'deviceProfile'=>$profile,'profiles'=>$profiles,'automationProfiles'=>$this->AutomationProfiles($room),
+                'automationTarget'=>$this->AutomationTargetCandidate($room)];
         }
         $pending=json_decode($this->ReadAttributeString('Pending'),true);
         $presets=json_decode($this->ReadAttributeString('ManualPresets'),true,64,JSON_THROW_ON_ERROR);$presetList=[];
@@ -888,7 +905,7 @@ class SVHeatingCenter extends IPSModuleStrict
         if($job) $preparation=['id'=>$job['id'],'status'=>$job['status'],'completed'=>array_map('intval',array_keys($job['sources'])),
             'total'=>7,'started'=>$job['started'],'error'=>$job['error']??''];
         return ['rooms'=>$rooms,'seasons'=>self::SEASONS,'active'=>$this->ReadAttributeBoolean('Active'),
-            'seasonPreparation'=>$preparation,
+            'seasonPreparation'=>$preparation,'reductionHistory'=>array_reverse($state['reductionHistory']??[]),
             'lastActionReply'=>json_decode($this->ReadAttributeString('LastActionReply'),true,64,JSON_THROW_ON_ERROR),
             'clock'=>['day'=>(int)$now->format('N')-1,'minute'=>(int)$now->format('G')*60+(int)$now->format('i'),'date'=>$now->format('d.m.Y')],
             'manualPresets'=>$presetList,'lastManualMode'=>$this->ReadAttributeString('LastManualMode'),
